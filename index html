@@ -32,7 +32,7 @@
 
     <script>
         const CLIENT_ID = "YOUR_GITHUB_CLIENT_ID"; 
-        const PROXY_URL = "YOUR_TOKEN_EXCHANGE_PROXY_URL"; 
+        const PROXY_URL = "https://patient-fog-62ed.hiplitehehe.workers.dev/"; 
         const GITHUB_API = "https://api.github.com/user";
         const GITHUB_USERNAME = "Hiplitehehe";
         const REPO_NAME = "Notes";
