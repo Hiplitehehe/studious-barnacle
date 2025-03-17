@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub OAuth Notes</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; }
+        input, textarea { width: 100%; margin-bottom: 10px; }
+        button { margin-top: 10px; }
+        .note { border: 1px solid #ccc; padding: 10px; margin-top: 10px; white-space: pre-wrap; }
+        .note-title { font-weight: bold; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h2>GitHub Notes with OAuth</h2>
+
+    <div id="loginSection">
+        <button onclick="loginWithGitHub()">Login with GitHub</button>
+    </div>
+
+    <div id="notesSection" style="display: none;">
+        <p>Welcome, <span id="loggedInUser"></span>! <button onclick="logout()">Logout</button></p>
+        <input type="text" id="noteTitle" placeholder="Note title...">
+        <textarea id="noteInput" placeholder="Write your note here..."></textarea>
+        <button onclick="saveNote()">Save Note</button>
+        
+        <h3>Saved Notes</h3>
+        <div id="notesContainer"></div>
+    </div>
+
+    <script>
+        const CLIENT_ID = "YOUR_GITHUB_CLIENT_ID"; 
+        const PROXY_URL = "YOUR_TOKEN_EXCHANGE_PROXY_URL"; 
+        const GITHUB_API = "https://api.github.com/user";
+        const GITHUB_USERNAME = "Hiplitehehe";
+        const REPO_NAME = "Notes";
+        const FILE_PATH = "j.json";
+
+        let githubToken = localStorage.getItem("github_token");
+
+        if (githubToken) {
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("notesSection").style.display = "block";
+            fetchUserInfo();
+        }
+
+        function loginWithGitHub() {
+            const redirectUri = window.location.origin;
+            const authUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=repo&redirect_uri=${redirectUri}`;
+            window.location.href = authUrl;
+        }
+
+        async function exchangeCodeForToken(code) {
+            let response = await fetch(PROXY_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code })
+            });
+
+            let data = await response.json();
+            if (data.access_token) {
+                localStorage.setItem("github_token", data.access_token);
+                githubToken = data.access_token;
+                fetchUserInfo();
+            } else {
+                alert("GitHub login failed!");
+            }
+        }
+
+        async function fetchUserInfo() {
+            let response = await fetch(GITHUB_API, {
+                headers: { Authorization: `Bearer ${githubToken}` }
+            });
+
+            if (response.ok) {
+                let user = await response.json();
+                document.getElementById("loginSection").style.display = "none";
+                document.getElementById("notesSection").style.display = "block";
+                document.getElementById("loggedInUser").textContent = user.login;
+                fetchNotes();
+            } else {
+                logout();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem("github_token");
+            location.reload();
+        }
+
+        async function fetchNotes() {
+            if (!githubToken) return;
+
+            let url = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`;
+            let response = await fetch(url, {
+                headers: { Authorization: `Bearer ${githubToken}`, "Accept": "application/vnd.github.v3+json" }
+            });
+
+            if (!response.ok) return console.error("Failed to fetch notes.");
+
+            let data = await response.json();
+            let content = atob(data.content);
+            try {
+                let notes = JSON.parse(content);
+                displayNotes(notes);
+            } catch {
+                console.error("Invalid JSON format.");
+            }
+        }
+
+        async function saveNote() {
+            let noteTitle = document.getElementById("noteTitle").value.trim();
+            let noteText = document.getElementById("noteInput").value.trim();
+            if (!noteTitle || !noteText || !githubToken) return;
+
+            let url = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`;
+            let getResponse = await fetch(url, {
+                headers: { Authorization: `Bearer ${githubToken}`, "Accept": "application/vnd.github.v3+json" }
+            });
+
+            let notes = [];
+            let sha = "";
+            if (getResponse.ok) {
+                let data = await getResponse.json();
+                sha = data.sha;
+                notes = JSON.parse(atob(data.content));
+            }
+
+            notes.push({ title: noteTitle, text: noteText, timestamp: new Date().toISOString() });
+
+            let updatedContent = btoa(JSON.stringify(notes, null, 2));
+            let putResponse = await fetch(url, {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${githubToken}`,
+                    "Accept": "application/vnd.github.v3+json",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    message: "Add new note",
+                    content: updatedContent,
+                    sha
+                })
+            });
+
+            if (putResponse.ok) {
+                document.getElementById("noteTitle").value = "";
+                document.getElementById("noteInput").value = "";
+                fetchNotes();
+            } else {
+                console.error("Failed to save note.");
+            }
+        }
+
+        function displayNotes(notes) {
+            let container = document.getElementById("notesContainer");
+            container.innerHTML = "";
+            notes.forEach(note => {
+                let noteDiv = document.createElement("div");
+                noteDiv.classList.add("note");
+                noteDiv.innerHTML = `<div class="note-title">${note.title}</div>${note.text}`;
+                container.appendChild(noteDiv);
+            });
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get("code");
+        if (code) {
+            exchangeCodeForToken(code);
+            window.history.replaceState({}, document.title, "/");
+        }
+    </script>
+</body>
+</html>
