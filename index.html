@@ -30,8 +30,8 @@
     </div>
 
     <script>
-        const CLIENT_ID = "YOUR_GITHUB_CLIENT_ID"; 
-        const PROXY_URL = "YOUR_TOKEN_EXCHANGE_PROXY_URL"; 
+        const CLIENT_ID = "Ov23ligw5xlcxmzAvxJF"; 
+        const PROXY_URL = "https://patient-fog-62ed.hiplitehehe.workers.dev/"; 
         const GITHUB_API = "https://api.github.com/user";
         const GITHUB_USERNAME = "Hiplitehehe";
         const REPO_NAME = "Notes";
@@ -46,7 +46,7 @@
         }
 
         function loginWithGitHub() {
-            const redirectUri = window.location.origin;
+            const redirectUri = "https://hiplitehehe.github.io/studious-barnacle/";
             const authUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=repo&redirect_uri=${redirectUri}`;
             window.location.href = authUrl;
         }
