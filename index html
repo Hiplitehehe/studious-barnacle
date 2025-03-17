@@ -31,7 +31,7 @@
     </div>
 
     <script>
-        const CLIENT_ID = "YOUR_GITHUB_CLIENT_ID"; 
+        const CLIENT_ID = "Ov23licuGtSy8ZiXd2lk"; 
         const PROXY_URL = "https://patient-fog-62ed.hiplitehehe.workers.dev/"; 
         const GITHUB_API = "https://api.github.com/user";
         const GITHUB_USERNAME = "Hiplitehehe";
